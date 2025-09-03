@@ -1,12 +1,8 @@
-import streamlit as st
-from sumy.parsers.plaintext import PlaintextParser
-from sumy.nlp.tokenizers import Tokenizer
-from sumy.summarizers.lex_rank import LexRankSummarizer
 import nltk
+nltk.download('punkt')
+import streamlit as st
+from transformers import pipeline
 from PIL import Image
-
-# Download punkt for sumy
-nltk.download("punkt")
 
 # -----------------------------
 # Streamlit Page Config & Styling
@@ -64,7 +60,8 @@ st.markdown("Enter a paragraph, and get a concise summary instantly!")
 # Sidebar
 # -----------------------------
 st.sidebar.header("Settings")
-num_sentences = st.sidebar.slider("Number of sentences in summary", min_value=1, max_value=10, value=3)
+max_len = st.sidebar.slider("Max Summary Length", min_value=30, max_value=300, value=120)
+min_len = st.sidebar.slider("Min Summary Length", min_value=10, max_value=100, value=30)
 
 # -----------------------------
 # Main Layout
@@ -80,13 +77,11 @@ with col2:
     if st.button("Summarize"):
         if user_input.strip():
             with st.spinner("Summarizing..."):
-                parser = PlaintextParser.from_string(user_input, Tokenizer("english"))
-                summarizer = LexRankSummarizer()
-                summary_sentences = summarizer(parser.document, sentences_count=num_sentences)
-                summary = " ".join([str(sentence) for sentence in summary_sentences])
+                summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+                summary = summarizer(user_input, max_length=max_len, min_length=min_len, do_sample=False)
                 st.success("✅ Summary generated!")
                 st.markdown("### Summary:")
-                st.write(summary)
+                st.write(summary[0]['summary_text'])
         else:
             st.warning("⚠️ Please enter some text to summarize!")
 
